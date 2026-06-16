@@ -12,8 +12,8 @@ jobs:
     runs-on: windows-latest
     
     strategy:
+      fail-fast: false # 關鍵：就算 x86 失敗，x64 也會堅持跑完，方便看各自的錯誤日誌
       matrix:
-        # 只保留最乾淨的配置名稱
         preset: [x86-release, x64-release]
 
     steps:
@@ -22,15 +22,27 @@ jobs:
       with:
         submodules: recursive
 
+    # 1. 設置乾淨、不衝突的 CMake 與 Ninja 執行檔路徑
+    - name: Setup CMake and Ninja
+      uses: lukka/get-cmake@v10
+
+    # 2. 依照編譯目標，精確載入對應的 MSVC 開發者環境變數
+    - name: Configure Developer Command Prompt for MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: ${{ contains(matrix.preset, 'x86') && 'x86' || 'x64' }}
+
+    # 3. 執行配置 (明確指定使用 Ninja)
     - name: CMake Configure
-      # 移除所有手動指定編譯器的參數與 Action，讓 CMake 透過內建機制全自動掃描
       run: |
         cmake --preset ${{ matrix.preset }}
 
+    # 4. 執行建置
     - name: CMake Build
       run: |
         cmake --build .build/${{ matrix.preset }} --config Release
 
+    # 5. 收集產出的 exe
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
