@@ -5,47 +5,51 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch: # 允許在 GitHub 網頁畫面上手動點擊執行
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-windows:
     runs-on: windows-latest
     
     strategy:
-      fail-fast: false # 就算其中一個架構出錯，另一個架構也會堅持編譯完，方便看各自的日誌
+      fail-fast: false
       matrix:
-        preset: [x86-release, x64-release]
+        # 建立 Preset 與您 CMake 輸出路徑（x32/x64）的對應關係
+        include:
+          - preset: x86-release
+            out_dir: x32
+          - preset: x64-release
+            out_dir: x64
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive # 如果專案有依賴其他子模組，會一併拉取
+        submodules: recursive
 
-    # 1. 設置乾淨、不衝突的 CMake 與 Ninja 執行檔路徑
     - name: Setup CMake and Ninja
       uses: lukka/get-cmake@latest
 
-    # 2. 依照編譯目標，精確載入對應的 MSVC 開發者環境變數
     - name: Configure Developer Command Prompt for MSVC
       uses: ilammy/msvc-dev-cmd@v1
       with:
-        arch: ${{ contains(matrix.preset, 'x86') && 'x86' || 'x64' }}
+        arch: ${{ matrix.out_dir == 'x32' && 'x86' || 'x64' }}
 
-    # 3. 執行配置 (讀取您的 CMakePresets.json 內容)
     - name: CMake Configure
       run: |
         cmake --preset ${{ matrix.preset }}
 
-    # 4. 執行建置 (直接指向產出資料夾進行建置)
     - name: CMake Build
       run: |
         cmake --build .build/${{ matrix.preset }} --config Release
 
-# 5. 收集產出的 exe 檔案並提供網頁下載
+    # 5. 依據您的 CMakeLists.txt 設定，精準到 .bin 資料夾打包成品
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: RxCMVS-${{ matrix.preset }}
         path: |
-          .build/${{ matrix.preset }}/*.exe
+          .bin/${{ matrix.out_dir }}/release/*.exe
