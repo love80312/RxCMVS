@@ -42,10 +42,10 @@ jobs:
       run: |
         cmake --build .build/${{ matrix.preset }} --config Release
 
-    # 5. 收集產出的 exe 檔案並提供網頁下載
+# 5. 收集產出的 exe 檔案並提供網頁下載
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: RxCMVS-${{ matrix.preset }}
         path: |
-          .build/${{ matrix.preset }}/**/*.exe
+          .build/${{ matrix.preset }}/*.exe
