@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch: # 允許網頁上手動點擊執行
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -13,33 +13,29 @@ jobs:
     
     strategy:
       matrix:
-        # 同時編譯 x86 與 x64 的 Release 版本
-        preset: [x86-release, x64-release]
+        # 定義架構與配置
+        include:
+          - preset: x86-release
+            arch: Win32
+          - preset: x64-release
+            arch: x64
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        submodules: recursive # 如果專案有依賴其他子模組，會一併拉取
-
-    - name: Setup CMake and Ninja
-      uses: lukka/get-cmake@latest
-
-    - name: Configure Developer Command Prompt for MSVC
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        # 修正這裡：將 matrix:preset 改為 matrix.preset
-        arch: ${{ contains(matrix.preset, 'x86') && 'x86' || 'x64' }}
+        submodules: recursive
 
     - name: CMake Configure
+      # -G "Visual Studio 17 2022" 會直接覆蓋 Preset 裡的 Ninja，改用 VS2022 引擎編譯
+      # -A 指定 32 位元 (Win32) 或 64 位元 (x64)
       run: |
-        cmake --preset ${{ matrix.preset }}
+        cmake --preset ${{ matrix.preset }} -G "Visual Studio 17 2022" -A ${{ matrix.arch }}
 
     - name: CMake Build
       run: |
-        cmake --build --preset ${{ matrix.preset }}
+        cmake --build .build/${{ matrix.preset }} --config Release
 
-    # 封裝產出的 exe 檔案
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
