@@ -24,13 +24,12 @@ jobs:
 
     - name: Setup CMake and Ninja
       uses: lukka/get-cmake@latest
-      # windows-latest 預設已內建 CMake 與 Ninja，此步驟可確保最新版與環境穩定
 
     - name: Configure Developer Command Prompt for MSVC
       uses: ilammy/msvc-dev-cmd@v1
       with:
-        # 根據矩陣中的 preset 名稱，動態切換對應的編譯器架構 (x86 或 x64)
-        arch: ${{ contains(matrix:preset, 'x86') && 'x86' || 'x64' }}
+        # 修正這裡：將 matrix:preset 改為 matrix.preset
+        arch: ${{ contains(matrix.preset, 'x86') && 'x86' || 'x64' }}
 
     - name: CMake Configure
       run: |
@@ -40,7 +39,7 @@ jobs:
       run: |
         cmake --build --preset ${{ matrix.preset }}
 
-    # 封裝產出的 exe 檔案（請根據 RxCMVS 的實際產出目標調整路徑，通常位於 .build 目錄內）
+    # 封裝產出的 exe 檔案
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
