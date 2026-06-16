@@ -13,12 +13,8 @@ jobs:
     
     strategy:
       matrix:
-        # 定義架構與配置
-        include:
-          - preset: x86-release
-            arch: Win32
-          - preset: x64-release
-            arch: x64
+        # 只保留最乾淨的配置名稱
+        preset: [x86-release, x64-release]
 
     steps:
     - name: Checkout repository
@@ -27,10 +23,9 @@ jobs:
         submodules: recursive
 
     - name: CMake Configure
-      # -G "Visual Studio 17 2022" 會直接覆蓋 Preset 裡的 Ninja，改用 VS2022 引擎編譯
-      # -A 指定 32 位元 (Win32) 或 64 位元 (x64)
+      # 移除所有手動指定編譯器的參數與 Action，讓 CMake 透過內建機制全自動掃描
       run: |
-        cmake --preset ${{ matrix.preset }} -G "Visual Studio 17 2022" -A ${{ matrix.arch }}
+        cmake --preset ${{ matrix.preset }}
 
     - name: CMake Build
       run: |
